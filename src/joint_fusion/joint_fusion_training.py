@@ -20,10 +20,14 @@ from src.utils.utils import (
 )
 import pandas as pd
 
+import time
+
 
 def joint_fusion_training(
     config: SimpleNamespace, train_df: pd.DataFrame, val_df: pd.DataFrame, force=False
 ):
+
+    print(f"--------Joint fusion training--------")
     _train_df, _val_df = train_df.copy(), val_df.copy()
     enable_reproducible_results(config.seed)
     # also stores config
@@ -99,6 +103,11 @@ def joint_fusion_training(
         log_every_n_steps=1,
         min_epochs=config.min_epochs,
         gradient_clip_val=config.gradient_clip_val,
+        devices='auto',
     )
 
+    time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print(f"-----------------------------Starting training joint_fusion_training at time {time_string}-----------------------------")
+    print(f"----type: {config.type}, model: {config.model}---")
     trainer.fit(model, datamodule=datamodule)
+    print("-----------------------------Finished training-----------------------------")

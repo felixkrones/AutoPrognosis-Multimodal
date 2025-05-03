@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from typing import OrderedDict
-from sklearn.metrics import balanced_accuracy_score, accuracy_score
+from sklearn.metrics import balanced_accuracy_score, accuracy_score, roc_auc_score
 import torch
 from transformers import (
     AutoImageProcessor,
@@ -29,6 +29,9 @@ class BaseClassifier(LightningModule):
         {setattr(self, k, v) for k, v in kwargs.items()}
         if weights is None: 
             weights = torch.ones(num_labels)
+            print(f"Using default weights: {weights}")
+        else:
+            print(f"Using custom weights: {weights}")
         self.loss = torch.nn.CrossEntropyLoss(weight=weights)
         self.validation_step_outputs = []
 
@@ -66,6 +69,10 @@ class BaseClassifier(LightningModule):
         outputs = self.forward(inputs)
         loss = self.loss(outputs.logits, labels)
         if loss.isnan():
+            print(f"Model names: {self.model.__class__.__name__}")
+            print(f"labels: {labels[:8]}")
+            print(f"inputs: {inputs[:8]}")
+            print(f"outputs.logits: {outputs.logits[:8]}")
             raise ValueError("NaN loss")
 
         self.log(
@@ -88,6 +95,23 @@ class BaseClassifier(LightningModule):
         self.log(
             "val_acc", acc, on_step=False, on_epoch=True, prog_bar=True, logger=True
         )
+        try:
+            if  outputs.logits.shape[1] == 2:
+                # Binary case: use positive class probabilities
+                probs =  outputs.logits.softmax(dim=1)[:, 1].detach().cpu().numpy()
+                auc = roc_auc_score(labels.cpu().numpy(), probs)
+            else:
+                # Multi-class case: use one-vs-rest strategy
+                probs =  outputs.logits.softmax(dim=1).detach().cpu().numpy()
+                auc = roc_auc_score(
+                    labels.cpu().numpy(), probs, multi_class='ovr', average='macro'
+                )
+            self.log(
+                "val_auc", auc, on_step=False, on_epoch=True, prog_bar=True, logger=True
+            )
+        except ValueError:
+            # Not enough classes in batch to compute AUC
+            pass
 
         self.validation_step_outputs.append(
             {

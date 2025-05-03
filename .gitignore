@@ -6,3 +6,4 @@ __pycache__
 /data_resized
 /experiments
 /checkpoints
+data_*/**

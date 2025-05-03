@@ -19,17 +19,24 @@ from src.imaging.imaging_predict_features import (
 )
 import pandas as pd
 
+import time
+
 
 def early_fusion_training(
     config: SimpleNamespace, train_df: pd.DataFrame, val_df: pd.DataFrame, force=False
 ):
+    print(f"---------Early fusion training--------")
     _train_df, _val_df = train_df.copy(), val_df.copy()
 
+    print(f"--------Imaging training inside early fusion--------")
     imaging_training(config.imaging, _train_df, _val_df, force)
+    print(f"--------Imaging training inside early fusion done--------")
 
     enable_reproducible_results(config.seed)
 
+    print(f"--------Imaging features extraction--------")
     train_features_df = imaging_predict_features(config.imaging, df=_train_df)
+    print(f"--------Imaging features extraction done--------")
     features_train_df = _train_df.set_index(config.index_column).join(train_features_df)
 
     val_features_df = imaging_predict_features(config.imaging, df=_val_df)
@@ -91,6 +98,11 @@ def early_fusion_training(
         log_every_n_steps=1,
         min_epochs=config.min_epochs,
         gradient_clip_val=config.gradient_clip_val,
+        devices='auto',
     )
 
+    time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print(f"-----------------------------Starting training early_fusion_training at time {time_string}-----------------------------")
+    print(f"----type: {config.type}, model: {config.model}---")
     trainer.fit(model, datamodule=datamodule)
+    print("-----------------------------Finished training-----------------------------")

@@ -50,6 +50,7 @@ def joint_fusion_predict_prob(args: SimpleNamespace, df: pd.DataFrame) -> pd.Dat
         default_root_dir=experiment_dir,
         log_every_n_steps=1,
         deterministic=True,
+        devices='auto',
     )
 
     checkpoints = list(checkpoint_dir.rglob("*.ckpt"))

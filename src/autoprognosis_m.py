@@ -20,6 +20,8 @@ import pandas as pd
 from src.utils.ensemble import search_weights
 from src.utils.metrics import get_metric
 
+from sklearn.metrics import roc_auc_score
+
 
 class AutoprognosisM:
     def __init__(self, pipeline_config: SimpleNamespace):
@@ -41,15 +43,27 @@ class AutoprognosisM:
                 }
             )
 
+            print("")
+            print("")
+            print("------------------------------------------------------------------------------------")
+            try:
+                print(f"------------------- Training {model_config.type} with model {model_config.model} -------------------")
+            except Exception as e:
+                print(f"Error: {e}")
+            print("------------------------------------------------------------------------------------")
+            print("")
+
             if model_config.type == "imaging":
-                # Run imaging training
+                print(f"--------------Training imaging model {model_config.model}--------------")
                 imaging_training(model_config, train_df, val_df, force)
             elif model_config.type == "tabular":
+                print(f"--------------Training tabular model--------------")
                 tabular_training(model_config, train_df, force=force)
             elif model_config.type == "joint_fusion":
+                print(f"--------------Training joint fusion model {model_config.model}--------------")
                 joint_fusion_training(model_config, train_df, val_df, force=force)
             elif model_config.type == "early_fusion":
-                # Combine with global config:
+                print(f"--------------Training early fusion model {model_config.model}--------------")
                 model_config.imaging = dict_to_namespace(
                     {
                         **namespace_to_dict(self.pipeline_config.globals),
@@ -58,6 +72,7 @@ class AutoprognosisM:
                 )
                 early_fusion_training(model_config, train_df, val_df, force)
             elif model_config.type == "late_fusion":
+                print(f"--------------Training late fusion model--------------")
                 model_config.imaging = dict_to_namespace(
                     {
                         **namespace_to_dict(self.pipeline_config.globals),
@@ -203,7 +218,16 @@ class AutoprognosisM:
         ensemble_predictions_df = pd.DataFrame(
             ensemble_predictions, index=index, columns=["predictions"]
         )
-        if return_probs:
-            return ensemble_probs_df
+
+        # Get auc values
+        true_labels = df["diagnostic"].values
+        if ensemble_avg_probs.shape[1] == 2:
+            auc = roc_auc_score(true_labels, ensemble_avg_probs[:, 1])
         else:
-            return ensemble_predictions_df
+            auc = roc_auc_score(true_labels, ensemble_avg_probs, multi_class='ovr')
+        print(f"----AUC: {auc}---")
+
+        if return_probs:
+            return ensemble_probs_df, auc
+        else:
+            return ensemble_predictions_df, auc

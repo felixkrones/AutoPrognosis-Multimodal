@@ -40,6 +40,7 @@ def imaging_predict_features(config: SimpleNamespace, df: pd.DataFrame) -> pd.Da
         default_root_dir=experiment_dir,
         log_every_n_steps=1,
         deterministic=True,
+        devices='auto',
     )
 
     checkpoints = list(checkpoint_dir.rglob("*.ckpt"))

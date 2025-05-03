@@ -1,0 +1,87 @@
+{
+  "globals": {
+    "base_experiment_dir": "experiments/",
+    "base_checkpoint_dir": "checkpoints/",
+    "index_column": "img_id",
+    "target_column": "diagnostic",
+    "class_to_idx": {"0": 0, "1": 1},
+    "feature_columns": ["oasis_first", "oasis_last", "oasis_max", "sofa_first", "sofa_last", "sofa_max", "220045_mean", "220045_max", "220045_min", "220277_mean", "220277_min", "220210_mean", "220210_max", "220210_min", "223761_mean", "223761_max", "223761_min", "220180_mean", "220180_max", "220180_min", "220181_mean", "220181_max", "220181_min", "220179_mean", "220179_max", "220179_min", "220645_mean", "220645_max", "220645_min", "227457_mean", "223835_mean", "223835_min", "227456_mean", "220235_mean", "220235_max", "220235_min", "220224_mean", "220224_max", "220224_min", "220739_last", "223901_last", "223900_last", "226512_last", "dbp_first", "dbp_last", "dbp_mean", "heartrate_first", "heartrate_last", "heartrate_mean", "o2sat_first", "o2sat_last", "o2sat_mean", "resprate_first", "resprate_last", "resprate_mean", "pain_first", "pain_last", "pain_mean", "sbp_first", "sbp_last", "sbp_mean", "temperature_f_first", "temperature_f_last", "temperature_f_mean", "acuity_first", "acuity_last", "acuity_mean", "225158_sum", "225158_mean", "226452_sum", "226452_mean", "220949_sum", "220949_mean", "225943_sum", "225943_mean", "222011_sum", "222011_mean", "procedure_icd_10_code_last", "gender_last", "race_last", "medication_at_ed_admission_gsn_last", "anchor_age_first", "50868_mean", "50882_mean", "50902_mean", "50912_mean", "50931_mean", "51221_mean", "51250_mean", "51265_mean", "50971_mean", "50971_max", "50971_min", "51279_mean", "50983_mean", "51006_mean", "51222_mean", "51248_mean", "51249_mean", "51277_mean", "51301_mean", "50960_mean", "50893_mean", "50970_mean", "51237_mean", "51274_mean", "51275_mean", "50861_mean", "50885_mean", "50863_mean", "50813_mean", "51516_mean", "51516_max", "51516_min", "ed_icd_10_code_last"],
+    "augmentation": true,
+    "fine_tune_lr": 0.0001,
+    "n_folds": 5,
+    "gradient_clip_val": 1.0,
+    "lr": 1e-6,
+    "max_epochs": 30,
+    "min_epochs": 5,
+    "monitor_metric": "val_loss",
+    "monitor_mode": "min",
+    "num_workers": 12,
+    "patience": 5,
+    "seed": 42,
+    "warm_up_epochs": 5,
+    "weighted_loss": true
+  },
+  "configurations": [
+    {
+      "type": "early_fusion",
+      "batch_size": 32,
+      "model": "Classifier",
+      "imaging": {
+        "batch_size": 32,
+        "model": "EfficientNetB4",
+        "type": "imaging"
+      }
+    },
+    {
+      "batch_size": 32,
+      "model": "EfficientNetB4",
+      "type": "imaging"
+    },
+    {
+      "batch_size": 64,
+      "model": "DinoV2Base",
+      "type": "imaging"
+    },
+    {
+      "batch_size": 32,
+      "model": "EfficientNetB4",
+      "type": "joint_fusion"
+    },
+    {
+      "type": "tabular",
+      "classifier": {
+        "feature_scaling": ["nop"],
+        "feature_selection": ["nop"],
+        "classifiers": ["xgboost"],
+        "n_folds_cv": 4,
+        "timeout": 120,
+        "num_study_iter": 1,
+        "metric": "aucroc",
+        "sample_for_search": true,
+        "score_threshold": 0.4
+      }
+    },
+    {
+      "type": "late_fusion",
+      "imaging": {
+        "batch_size": 32,
+        "model": "EfficientNetB4",
+        "type": "imaging"
+      },
+      "tabular": {
+        "type": "tabular",
+        "classifier": {
+          "feature_scaling": ["nop"],
+          "feature_selection": ["nop"],
+          "classifiers": ["xgboost"],
+          "n_folds_cv": 4,
+          "timeout": 120,
+          "num_study_iter": 1,
+          "metric": "aucroc",
+          "sample_for_search": true,
+          "score_threshold": 0.4
+        }
+      }
+    }
+  ]
+}
